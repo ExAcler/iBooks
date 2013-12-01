@@ -74,25 +74,25 @@ int divide_page(const char* filename,const int pages,int save)
 	
 	// 如果请求的页数超过 9999 页，修正为 9999 页
 	if ((total=tmp+pages)>9999) total=9999;
-	// 9999 页尝试往后翻一页时，跳出
+	// 在 9999 页时尝试往后翻一页，跳出
 	if (cached+1>9999) {Bfile_CloseFile_OS(handle);return 0;};
 	
-	for (j=tmp;j<total;++j)    //  从当前已缓存页面分到请求的页面，使用模拟绘制方法
+	for (j=tmp;j<total;++j)    //  从当前已缓存页面分到请求的页面，使用模拟填充显示区域方法
 	{
-	    // 尝试读取一段
+	    // 尝试读取一段文字以备分页
 	    memset(buf,0,461);
 	    Bfile_ReadFile_OS(handle,buf,400,totbytes);
 		// 如果读到文件末尾则跳出
 		if (!buf[0]) {Bfile_CloseFile_OS(handle);return 0;};
 		
-		// 初始位置
+		// 填充位置设置为初始状态
         cx=0;
 		cy=24;
 		
         for (i=0;;)
         {
             is_chs=buf[i] & 0x80;  // 判断高位字节，确定是否为中文
-            if ((cx+pp)>368)  // 超过屏幕右边缘
+            if ((cx+pp)>368)  // 填充超过屏幕右边缘
                 goto cn;
             if (is_chs) i+=2;  // 中文，跳2字节
             else
@@ -105,27 +105,27 @@ int divide_page(const char* filename,const int pages,int save)
 			    i++;
             }
         
-		    // 增加字符偏移
+		    // 将字符填充入当前行，增加字符偏移
 		    if (is_chs)
                 cx+=25;
 		    else
 		        cx+=16;
         
-		    // 超过屏幕右边缘
+		    // 填充超过屏幕右边缘
             if (cx>368)
             {
             cn:
                 cx=0;
-                cy+=24;  // 进入下一行
-			    if (cy>190)  // 超过屏幕下边缘，跳出
+                cy+=24;  // 增加纵向字符偏移，进入下一行
+			    if (cy>190)  // 填充超过屏幕下边缘，跳出
 			        break;
             }
         }
 	    bytes[j+1]=i+totbytes;  // 将最后一个字符在文件中的位置存入下一页的缓存，以备读取
 		totbytes+=i;  // 读取字节指针增加
-	    ++cached;  // 已缓存页面+1
+	    ++cached;  // 已缓存页面增加，表示分页成功
 	}
-	if (save) page=0;
+	if (save) page=0;    // 跳回第一页  
 	
 	Bfile_CloseFile_OS(handle);
 	return 1;
