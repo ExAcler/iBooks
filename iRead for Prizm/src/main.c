@@ -1,6 +1,8 @@
 /*
 
 iRead II for Prizm Pro
+Program main source file
+
 (c)2013 ExAcler & wtof1996 Some rights reserved.
 
 This program is free software: you can redistribute it and/or modify
