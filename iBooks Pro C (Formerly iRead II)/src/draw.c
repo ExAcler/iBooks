@@ -1,9 +1,9 @@
 /*
 
-iRead II for Prizm Pro
+iBooks Pro C
 Drawing library source file
 
-(c)2013 ExAcler & wtof1996 Some rights reserved.
+(c)2013 - 2017 Xhorizon, Some rights reserved.
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -20,7 +20,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 */
 
-#include <display.h>
+#include <display_syscalls.h>
+#include <color.h>
 
 void draw_pic (int x,int y,int width,int height,int sel,unsigned char* pimage)
 {
@@ -119,19 +120,25 @@ int print_chs_page(int x,int y,const int totbytes,const unsigned char* str)
         }
         else
         {
-		    if (str[i]=='\n')
+		    if (str[i] == '\r' || str[i] == '\n')
 			{
 			    i++;
+				if (str[i] == '\r' || str[i] == '\n')  // 若读到回车符直接进入下一行
+					i++;
 				goto cn;
 			}
-            print_asc_char (cx,cy,0,str[i]);
+            //print_asc_char (cx,cy,0,str[i]);
+			char a[2] = {0x0, 0x0};
+			a[0] = str[i];
+			
+			PrintCXY(cx, cy - 24, a, TEXT_MODE_NORMAL, -1, COLOR_BLACK, COLOR_WHITE, 1, 0);
 			i++;
         }
         
 		if (is_chs)
             cx+=25;
 		else
-		    cx+=16;
+		    cx+=18;
         
         if (cx>368)
         {

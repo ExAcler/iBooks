@@ -1,9 +1,9 @@
 /*
 
-iRead II for Prizm Pro
+iBooks Pro C
 Browser library header file
 
-(c)2013 ExAcler & wtof1996 Some rights reserved.
+(c)2013 - 2017 Xhorizon, Some rights reserved.
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -34,9 +34,14 @@ typedef struct
     unsigned long   address;
 } FILE_INFO;
 
+typedef struct
+{
+	char *name;
+} f_name;
+
 int Bfile_FindClose( int FindHandle );
 int Bfile_FindFirst( const FONTCHARACTER *pathname, int *FindHandle, FONTCHARACTER *foundfile, FILE_INFO *fileinfo );
 int Bfile_FindNext( int FindHandle, FONTCHARACTER *foundfile, FILE_INFO *fileinfo );
 
-char** get_file_list(const char* path);
-void draw_browser(const char* path,int firstf,int selp,char** a);
+f_name* get_file_list(const char* path);
+void draw_browser(const char* path,int firstf,int selp,f_name *a);

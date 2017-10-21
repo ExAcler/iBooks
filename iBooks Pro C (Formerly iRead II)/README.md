@@ -1,16 +1,16 @@
 Prizm
 =====
 
-这是 iRead 的 Prizm 系列版本。  
+这是 iBooks Pro C v1.5 RC1 版本。  
 源代码位于 \src 文件夹中。
 
 
 License
 =======
 
-iRead II for Prizm Pro Program main source file
+iBooks Pro C Program source file
 
-Copyright (C) 2013 ExAcler & wtof1996 Some rights reserved.
+Copyright (C) 2013 - 2017 Xhorizon, Some rights reserved.
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

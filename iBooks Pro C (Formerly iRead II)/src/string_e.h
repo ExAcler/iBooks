@@ -1,9 +1,9 @@
 /*
 
-iRead II for Prizm Pro
+iBooks Pro C
 String library header file
 
-(c)2013 ExAcler & wtof1996 Some rights reserved.
+(c)2013 - 2017 Xhorizon, Some rights reserved.
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -78,6 +78,8 @@ char* strrchr(const char* str,char ch)
 
 int strlen(const char* s)
 {
+	if (!s) return 0;
+
     int i;
 	for (i=0;s[i];++i);
 	return i;

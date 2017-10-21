@@ -1,9 +1,9 @@
 /*
 
-iRead II for Prizm Pro
+iBooks Pro C
 Program main source file
 
-(c)2013 ExAcler & wtof1996 Some rights reserved.
+(c)2013 - 2017 Xhorizon, Some rights reserved.
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -20,7 +20,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 */
 
-#include <display.h>
+#include <display_syscalls.h>
 #include <keyboard_syscalls.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -63,6 +63,8 @@ int divide_page(const char* filename,const int pages,int save)
 	int is_chs=0;  // 中文字符标识
 	int tmp=cached,total=0;
 	
+	int decades_passed = 1;
+	
 	int handle;
 	char* buf=(char*)malloc(460);
 	FONTCHARACTER fname[64];
@@ -77,13 +79,22 @@ int divide_page(const char* filename,const int pages,int save)
 	// 在 9999 页时尝试往后翻一页，跳出
 	if (cached+1>9999) {Bfile_CloseFile_OS(handle);return 0;};
 	
+	// 在屏幕上显示分页的进度
+	ProgressBar(0, total - tmp);
+	
 	for (j=tmp;j<total;++j)    //  从当前已缓存页面分到请求的页面，使用模拟填充显示区域方法
 	{
 	    // 尝试读取一段文字以备分页
 	    memset(buf,0,461);
 	    Bfile_ReadFile_OS(handle,buf,400,totbytes);
 		// 如果读到文件末尾则跳出
-		if (!buf[0]) {Bfile_CloseFile_OS(handle);return 0;};
+		if (!buf[0])
+		{
+			ProgressBar(total - tmp, total - tmp);
+			Bfile_CloseFile_OS(handle);
+			MsgBoxPop();
+			return 0;
+		}
 		
 		// 填充位置设置为初始状态
         cx=0;
@@ -97,9 +108,11 @@ int divide_page(const char* filename,const int pages,int save)
             if (is_chs) i+=2;  // 中文，跳2字节
             else
             {
-		        if (buf[i]=='\n')  // 若读到回车符直接进入下一行
+		        if (buf[i] == '\r' || buf[i] == '\n')  // 若读到回车符直接进入下一行
 			    {
 			        i++;
+					if (buf[i] == '\r' || buf[i] == '\n')  // 若读到回车符直接进入下一行
+						i++;
 				    goto cn;
 			    }
 			    i++;
@@ -109,7 +122,7 @@ int divide_page(const char* filename,const int pages,int save)
 		    if (is_chs)
                 cx+=25;
 		    else
-		        cx+=16;
+		        cx+=18;
         
 		    // 填充超过屏幕右边缘
             if (cx>368)
@@ -124,10 +137,19 @@ int divide_page(const char* filename,const int pages,int save)
 	    bytes[j+1]=i+totbytes;  // 将最后一个字符在文件中的位置存入下一页的缓存，以备读取
 		totbytes+=i;  // 读取字节指针增加
 	    ++cached;  // 已缓存页面增加，表示分页成功
+		
+		// 每分完1/10的总体，增加进度显示
+		if (j - tmp == (total - tmp) / 10 * decades_passed)
+		{
+			ProgressBar(j - tmp, total - tmp);
+			decades_passed++;
+		}
 	}
 	if (save) page=0;    // 跳回第一页  
 	
+	ProgressBar(total - tmp, total - tmp);
 	Bfile_CloseFile_OS(handle);
+	MsgBoxPop();
 	return 1;
 }
 
@@ -205,7 +227,7 @@ void Save_Bookmark(const char* fn,unsigned int pages,int n)
 	int sel=0,flag;
 	char tip[64],tmp[64];
 	
-	MsgBoxPop();MsgBoxPush(5);
+	MsgBoxPush(5);
 	
 	beg:
 	flag=0;
@@ -263,6 +285,7 @@ void Save_Bookmark(const char* fn,unsigned int pages,int n)
 			    bookmark[sel]=0;flag=1;goto prg;break;    // 删除书签
 			
 			case KEY_CTRL_EXIT:
+				MsgBoxPop();
 			    return;
 		}
 	}
@@ -271,6 +294,7 @@ void Save_Bookmark(const char* fn,unsigned int pages,int n)
 	Save_Config(fn,n);
 	
 	if (flag) goto beg;
+	MsgBoxPop();
 }
 
 void Read_Bookmark(const char* fn,int* pages,int* n)
@@ -288,7 +312,7 @@ void Read_Bookmark(const char* fn,int* pages,int* n)
 	FONTCHARACTER fname[64];
 	char tip[64],tmp[64];
 	
-	MsgBoxPop();MsgBoxPush(5);
+	MsgBoxPush(5);
 	
 	beg:
 	font16 = open_font("\\\\fls0\\24PX.hzk");
@@ -338,6 +362,7 @@ void Read_Bookmark(const char* fn,int* pages,int* n)
 			    if (bookmark[sel])
 				{
 			        *pages=bookmark[sel]-1;    // 读取书签
+					MsgBoxPop();
 			        return;
 				}
 				else goto beg;break;
@@ -345,6 +370,7 @@ void Read_Bookmark(const char* fn,int* pages,int* n)
 			case KEY_CTRL_F1:
 			case KEY_CTRL_EXIT:
 			    *pages=_page;
+				MsgBoxPop();
 			    return;break;
 		}
 	}
@@ -398,19 +424,19 @@ void Disp_About()
 	font16 = open_font("\\\\fls0\\24PX.hzk");
 	select_font(font16);
 	
-	MsgBoxPop();MsgBoxPush(5);
+	MsgBoxPush(5);
 	
 	ClearArea(35,45,349,166);
 	locate_OS(3,2);
-	Print_OS("iRead II Pro",0,0);
-	print_chs_2(38,71,0,"制作：");
-	locate_OS(7,3);
-	Print_OS("LuLu wtof1996",0,0);
-	print_chs_2(38,95,0,"本程序依");
-	locate_OS(9,4);
+	Print_OS("iBooks Pro C",0,0);
+	print_chs_2(38, 71, 0, "版本 ");
+	locate_OS(7, 3);
+	Print_OS("1.50", 0, 0);
+	print_chs_2(38, 95, 0, "制作：清水视野工作室");
+	print_chs_2(38, 119, 0, "本程序依");
+	locate_OS(10, 5);
 	Print_OS("GNU GPL v3",0,0);
-	print_chs_2(38,119,0,"协议开源，修改时请保留");
-	print_chs_2(38,143,0,"此信息。");
+	print_chs_2(38, 143, 0, "协议开放源代码。");
 	close_font(font16);
 	
 	while (1)
@@ -420,6 +446,7 @@ void Disp_About()
 	    switch (key)
 		{
 		    case KEY_CTRL_EXIT:
+				MsgBoxPop();
 				return;break;
 	    }
 	}
@@ -438,7 +465,8 @@ void Page_Jump(const char* fn)
 	char keybuff[32];    //  接受页码的字符缓冲区
 	int inspos=0,target;
 	
-	MsgBoxPop();MsgBoxPush(5);
+	memset(keybuff, 0, sizeof(keybuff));
+	MsgBoxPush(5);
 	
 	beg:
 	font16 = open_font("\\\\fls0\\24PX.hzk");
@@ -474,6 +502,7 @@ void Page_Jump(const char* fn)
 	    switch (key)
 		{
 			case KEY_CTRL_EXIT:
+				MsgBoxPop();
 			    return;break;
 			
 			case KEY_CTRL_F2:
@@ -499,6 +528,7 @@ void Page_Jump(const char* fn)
 			    }
 				else
 				    page=target-1;    // 修正当前页面为输入的目标位置
+				MsgBoxPop();
 				return;break;
 			
 			default:
@@ -512,6 +542,108 @@ void Page_Jump(const char* fn)
 					}
 				}
 		}
+	}
+}
+
+int Subdir_Open(const char* fn)
+{
+    /*
+	    子目录文件名输入（界面绘制）
+		参数说明：
+		    fn: 接收从键盘输入文件名的缓冲区
+	*/
+
+	FONTCHARACTER fname[64];
+	char keybuff[32];    //  接受文件名的字符缓冲区
+	int inspos = 0;
+	
+	memset(keybuff, 0, sizeof(keybuff));
+	MsgBoxPush(4);
+	
+	beg:
+	font16 = open_font("\\\\fls0\\24PX.hzk");
+	select_font(font16);
+	
+	ClearArea(0, 192, 384, 216);
+	draw_pic(0, 192, 61, 22, 0, Menu_Sub_Jump);
+	
+	ClearArea(35, 45, 349, 141);
+	print_chs_2(38, 71, 0, "输入欲打开的文件名：");
+		
+	locate_OS(3, 4);
+	Print_OS("[        ].txt", 0, 0);
+	locate_OS(4, 4);
+	Print_OS(keybuff, 0, 0);
+	
+	close_font(font16);
+	
+	while (1)
+	{
+	    int key;
+	    GetKey(&key);
+	    switch (key)
+		{
+			case KEY_CTRL_EXIT:
+				MsgBoxPop();
+			    return 0; break;
+						
+			case KEY_CTRL_DEL:
+			    if (inspos > 0)
+				{
+					keybuff[--inspos] = 0;    // 最后一个字节置为 NULL，标识已删除
+					goto beg;
+				}
+			    break;
+			
+			case KEY_CTRL_F1:
+			case KEY_CTRL_EXE:
+			    strcpy(fn, keybuff);
+				//MsgBoxPop();
+				return 1; break;
+			
+			default:
+			    if (key >= 0x30 && key <= 0x39 || key >= 0x41 && key <= 0x5A || key >= 0x61 && key <= 0x7A)    // 输入数字 0~9 或英文字母 a-z、A-Z
+				{
+				    if (inspos <= 8)
+					{
+						keybuff[inspos++] = key;    // 最后一个字节添加输入
+						goto beg;
+					}
+				}
+		}
+	}
+}
+
+void Disp_FileNotFound()
+{
+    /*
+	    显示“文件未找到”消息（界面绘制）
+	*/
+
+	//MsgBoxPush(4);
+	
+	beg:
+	font16 = open_font("\\\\fls0\\24PX.hzk");
+	select_font(font16);
+	
+	ClearArea(35, 45, 349, 141);
+	print_chs_2(94, 71, 0,"文件未找到");
+	
+	print_chs_2(94, 119, 0, "按");
+	locate_OS(8, 5);
+	Print_OS(":[EXIT]", 0, 0);
+	close_font(font16);
+	
+	while (1)
+	{
+	    int key;
+	    GetKey(&key);
+	    switch (key)
+		{
+		    case KEY_CTRL_EXIT:
+				//MsgBoxPop();
+				return; break;
+	    }
 	}
 }
 
@@ -587,6 +719,8 @@ void iRead_main(const char* filename)
 	char* buf=(char*)malloc(461);
 	FONTCHARACTER fname[64];
 	
+	char tip[64], tmp[64];
+	
 	page=0;cached=0;
 	
 	memset(bytes,0,sizeof(bytes));
@@ -599,6 +733,12 @@ void iRead_main(const char* filename)
 	else
 	    if (cached%500!=0) divide_page(filename,500-cached%500,1);   // 补至 500 的整数倍
 	totbytes=0;
+	
+	/*  设置状态栏显示文字
+		0x0001：显示电量
+		0x0100：显示文字
+	*/
+	DefineStatusAreaFlags(3, 0x01 | 0x02 | 0x100, 0, 0);
 	
 	beg:
 	font16=open_font("\\\\fls0\\24PX.hzk");
@@ -614,6 +754,9 @@ void iRead_main(const char* filename)
 	    //  如果分的页数不满 500 的整数倍，补分页满
 	    if (!divide_page(filename,1,0)) page=cached-1;
 	    else if (cached%500!=0) divide_page(filename,500-cached%500,0);
+		
+		close_font(font16);
+		goto beg;
 	}
 	totbytes=bytes[page];    //  修正读取字节指针位置
 	
@@ -625,6 +768,21 @@ void iRead_main(const char* filename)
 	
 	print_chs_page(0,24,totbytes,(unsigned char*)buf);    //  绘制一页
     close_font(font16);
+	
+	//  准备显示浏览进度
+	char fn_ptr[64];
+	memset(fn_ptr, 0, sizeof(fn_ptr));
+	GetDisplayFileName(filename, fn_ptr);
+	
+	memset(tip, 0, sizeof(tip));
+	memset(tmp, 0, sizeof(tmp));
+	strcat(tip, fn_ptr); strcat(tip, " ");
+	itoa(page + 1, tmp, 10); strcat(tip, tmp);
+    strcat(tip, "/"); memset(tmp, 0, sizeof(tmp));
+	itoa(cached, tmp, 10);strcat(tip, tmp);
+	
+	//  状态栏显示文件名及进度
+	DefineStatusMessage(tip, 0, 0, 0);
 	
 	while (1)
 	{
@@ -646,6 +804,7 @@ void iRead_main(const char* filename)
 				
 			case KEY_CTRL_EXIT:    //  离开，返回文件浏览器
 			    Save_Config(filename,cached+1);
+				DefineStatusAreaFlags(3, 0x01 | 0x02 | 0x100, 0, 0);
 			    return;break;
 				
 			case KEY_CTRL_F2:    //  打开存储书签对话框
@@ -663,24 +822,56 @@ void iRead_main(const char* filename)
  	}
 }
 
+int cmp(const void *a, const void *b)
+{
+	/*
+	    用于文件名排序的比较函数
+	*/
+	char aa[100], bb[100];
+	char *oo;
+	strcpy(aa, ((const f_name *)a) -> name); strcpy(bb, ((const f_name *)b) -> name);
+	
+	if (oo = strchr(aa, '[')) *oo = ' ';
+	if (oo = strchr(bb, '[')) *oo = ' ';
+	
+    return strcmp(aa, bb);
+}
+
 void browse_main()
 {
     /*
 	    文件浏览器主函数
 	*/
 
-    char ncat[64],workdir[64]="\\\\fls0";    //  当前目录
-    char** a=get_file_list("\\\\fls0\\*");    //  存储文件列表的二维数组
+    char ncat[64], workdir[64] = "\\\\fls0";    //  当前目录
+    f_name *a=get_file_list("\\\\fls0\\*.*");    //  存储文件列表的二维数组
 	int pos=0,firstn=0;    //  列表光标位置、列表下移的行数
 	unsigned int key;
+	char subdir_fn[32];    //  供接收子目录文件名输入的缓冲区
+	FONTCHARACTER fname[64];
+	int handle = 0;
+	
+	DefineStatusAreaFlags(3, 0x01 | 0x02 | 0x100, 0, 0);
 	
 	beg:
+	if (a) qsort(a, getn(a), sizeof(char *), cmp);
+	
 	font16 = open_font("\\\\fls0\\24PX.hzk");
 	select_font(font16);
 	
 	draw_browser(workdir,firstn,pos,a);    //  绘制浏览器界面
 	
 	close_font(font16);
+	
+	//  显示当前工作目录于状态栏
+	if (strcmp(workdir, "\\\\fls0") == 0)
+		DefineStatusMessage("", 0, 0, 0);
+	else
+	{
+		memset(ncat, 0, sizeof(ncat));
+		GetDisplayDirName(workdir, ncat);
+		DefineStatusMessage(ncat, 0, 0, 0);
+	}
 	
 	while (1)
 	{
@@ -703,7 +894,7 @@ void browse_main()
 				}
 				break;
 			
-			case KEY_CTRL_F2:    //  显示关于信息
+			case KEY_CTRL_F6:    //  显示关于信息
 			    Disp_About();
 				goto beg;
 				break;
@@ -712,16 +903,17 @@ void browse_main()
 			case KEY_CTRL_EXE:
 			    if (a)    //  如果文件列表不为空
 			    {
-			        if (strchr(a[pos+firstn],'['))    //  如果打开的是文件夹
+			        if (strchr(a[pos+firstn].name,'['))    //  如果打开的是文件夹
 				    {
 				        memset(ncat,0,sizeof(ncat));
-					    strcat(ncat,"\\\\fls0\\");
-				        strcat(ncat,++a[pos+firstn]);
-					    memset(workdir,0,sizeof(workdir));
-					    strcpy(workdir,ncat);
-					    strcat(ncat,"\\*");    //  解析出文件夹名称
+					    //strcat(ncat,"\\\\fls0\\");
+						strcat(ncat, workdir); strcat(ncat, "\\");
+				        strcat(ncat, ++a[pos+firstn].name);
+					    memset(workdir, 0, sizeof(workdir));
+					    strcpy(workdir, ncat);
+					    strcat(ncat, "\\*.*");    //  解析出文件夹名称
 					    a=get_file_list(ncat);    //  浏览该文件夹
-						pos=0;firstn=0;    //  列表初始化
+						pos=0; firstn=0;    //  列表初始化
 					    goto beg;
 				    }
 				    else    //  如果打开的是文本文件
@@ -729,13 +921,48 @@ void browse_main()
 						memset(ncat,0,sizeof(ncat));
 				        strcpy(ncat,workdir);
 						strcat(ncat,"\\");
-				        strcat(ncat,a[pos+firstn]);    //  解析出文件名称
+				        strcat(ncat,a[pos+firstn].name);    //  解析出文件名称
 						
 						iRead_main(ncat);    //  启动阅读器
 						goto beg;
 				    }
 				}
 				break;
+				
+			case KEY_CTRL_F2:	//  根据输入的文件名打开文件
+				memset(subdir_fn, 0, sizeof(subdir_fn));
+				if (Subdir_Open(subdir_fn))
+				{
+					memset(ncat, 0, sizeof(ncat));
+				    strcpy(ncat, workdir);
+					strcat(ncat, "\\");
+				    strcat(ncat, subdir_fn);    //  连接上输入的文件名字
+					strcat(ncat, ".txt");
+						
+					char_to_font(ncat, fname);
+					handle = Bfile_OpenFile_OS(fname,0);
+					if (handle <= 0)    //  如果文件未找到
+					{
+						Disp_FileNotFound();
+						MsgBoxPop();
+						goto beg; break;
+					}
+						
+					MsgBoxPop();
+					Bfile_CloseFile_OS(handle);
+					
+					//  重新绘制浏览器界面
+					font16 = open_font("\\\\fls0\\24PX.hzk");
+					select_font(font16);
+	
+					draw_browser(workdir, firstn, pos, a);
+					close_font(font16);
+					
+					//  启动阅读器
+					iRead_main(ncat);
+				}
+				
+				goto beg; break;
 			
 			case KEY_CTRL_EXIT:    //  从文件夹返回根目录
 			    if (strcmp(workdir,"\\\\fls0")!=0)    //  如果当前在文件夹内
@@ -744,7 +971,7 @@ void browse_main()
 			        strncpy(ncat,workdir,strlen(workdir)-strlen(strrchr(workdir,'\\')));
 				    memset(workdir,0,sizeof(workdir));
 				    strcpy(workdir,ncat);
-				    strcat(ncat,"\\*");    //  解析出上一级目录的名称
+				    strcat(ncat,"\\*.*");    //  解析出上一级目录的名称
 			        a=get_file_list(ncat);    //  浏览该文件夹
 					pos=0;firstn=0;    //  初始化列表
 				    goto beg;
@@ -754,6 +981,43 @@ void browse_main()
 			
 		}
 	}
+}
+
+void GetDisplayDirName(char *src, char *des)
+{
+	/*
+	    从工作目录中获取所要显示的文件夹层次信息
+		参数说明：
+			src: 欲处理的工作目录
+			des: 输出层次信息存放的缓冲区
+	*/
+	
+	char ncat[64], idm[32];
+	char *s;
+	
+	memset(ncat, 0, sizeof(ncat));
+	
+	for (s = src + 7; (int)s != 1; s = strchr(s, '\\') + 1)
+	{
+		strcat(ncat, "\\\\");
+		memset(idm, 0, sizeof(idm));
+		strncpy(idm, s, strlen(s) - (strchr(s, '\\') ? strlen(strchr(s, '\\')) : 0));
+		strcat(ncat, idm);
+	}
+	
+	strcpy(des, ncat);
+}
+
+void GetDisplayFileName(char *src, char *des)
+{
+	/*
+	    从工作目录中获取所要显示的文件名称
+		参数说明：
+			src: 欲处理的工作目录
+			des: 输出信息存放的缓冲区
+	*/
+	
+	strcpy(des, strrchr(src, '\\') + 1);
 }
 
 int check_consistency()

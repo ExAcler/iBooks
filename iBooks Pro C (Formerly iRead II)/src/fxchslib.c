@@ -1,10 +1,10 @@
 /*
 
-iRead II for Prizm Pro
+iBooks Pro C
 Chinese display library source file
-Ported by Anderain Lovelace, Copyright (c)2012 All rights reserved.
+Ported by Anderain Lovelace, Copyright (c) 2012 All rights reserved.
 
-(c)2013 ExAcler & wtof1996 Some rights reserved.
+(c)2013 - 2017 Xhorizon, Some rights reserved.
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
