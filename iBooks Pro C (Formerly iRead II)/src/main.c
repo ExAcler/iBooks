@@ -523,7 +523,7 @@ void Page_Jump(const char* fn)
 				target=atoi(keybuff);
 				if (target>cached)    // 如果目标位置超出已缓存页面数，尝试分页
 				{
-				    if (!divide_page(fn,target-cached,1)) page=cached-1;    // 若分页已达文件末尾，则将当前页面修正到最后一页
+				    if (!divide_page(fn, target-cached, 1)) page = cached - 1;    // 若分页已达文件末尾，则将当前页面修正到最后一页
 					else page=target-1;    // 否则修正当前页面为输入的目标位置
 			    }
 				else
